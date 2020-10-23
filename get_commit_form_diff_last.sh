@@ -27,7 +27,7 @@ html_header='
             <th>AUTHOR</th>
             <th>CR</th>
             <th>Description</th>
-            <th>Comments</th>
+            <th>assign</th>
         </tr>
 '
 
@@ -71,9 +71,8 @@ do
                 subject=`sed -n "1p" temp.json | jq .subject | awk -F '"' '{print $2}'`
                 author=`sed -n "1p" temp.json | jq .owner.name | awk -F '"' '{print $2}'`
 				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
-                curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | python -m json.tool > cr_message.json
-                assign=`cat cr_message.json | jq .fields.assignee.displayName`
-                description=`cat cr_message.json | jq .fields.summary`
+                assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
+				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
 				cr_url="https://idart.mot.com/browse/$cr"
 				echo "<tr><td><a href="$url">$url</a></td><td>$subject</td><td>$author</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
             else
@@ -105,9 +104,8 @@ do
                 subject=`sed -n "1p" temp.json | jq .subject | awk -F '"' '{print $2}'`
                 author=`sed -n "1p" temp.json | jq .owner.name | awk -F '"' '{print $2}'`
 				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
-				curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | python -m json.tool > cr_message.json
-				assign=`cat cr_message.json | jq .fields.assignee.displayName`
-				description=`cat cr_message.json | jq .fields.summary`
+				assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
+				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
 				cr_url="https://idart.mot.com/browse/$cr"
 				echo "<tr><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
             else
