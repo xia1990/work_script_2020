@@ -29,9 +29,9 @@ html_header='
             <th>SUBJECT</th>
             <th>AUTHOR</th>
             <th>CR</th>
-            <th>Description</th>
-            <th>Components</th>
-            <th>assign</th>
+            <th>CR Description</th>
+            <th>CR Components</th>
+            <th>CR assign</th>
         </tr>
 '
 
