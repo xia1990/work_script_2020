@@ -1,14 +1,6 @@
 #!/bin/bash
 
 root=`pwd`
-OLD_XML="$root/.repo/manifests/38_manifest.xml"
-NEW_XML="$root/.repo/manifests/39_manifest.xml"
-
-if [ -d ".repo" ];then
-	cd $root/.repo/manifests
-		repo diffmanifests $OLD_XML $NEW_XML > change_list.txt
-	cd -
-fi
 release_diff="change_list.txt"
 gerrit_server="gerrit.mot.com"
 
