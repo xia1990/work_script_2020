@@ -1,6 +1,14 @@
 #!/bin/bash
 
 root=`pwd`
+OLD_XML="$root/.repo/manifests/38_manifest.xml"
+NEW_XML="$root/.repo/manifests/39_manifest.xml"
+
+if [ -d ".repo" ];then
+	cd $root/.repo/manifests
+		repo diffmanifests $OLD_XML $NEW_XML > change_list.txt
+	cd -
+fi
 release_diff="change_list.txt"
 gerrit_server="gerrit.mot.com"
 
@@ -28,6 +36,7 @@ html_header='
             <th>AUTHOR</th>
             <th>CR</th>
             <th>Description</th>
+            <th>Components</th>
             <th>assign</th>
         </tr>
 '
@@ -75,8 +84,9 @@ do
 				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
                 assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
 				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
+				components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
 				cr_url="https://idart.mot.com/browse/$cr"
-				echo "<tr><td><a href="$url">$url</a></td><td>$subject</td><td>$author|$eamil</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
+				echo "<tr><td><a href="$url">$url</a></td><td>$subject</td><td>$author</br>($eamil)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
             else
                 echo "can not find commit in gerrit server" # commit gerrit上查不到只能从本地获取了
                 if [ -d "$project_path" ]
@@ -89,9 +99,10 @@ do
 						cr_url="https://idart.mot.com/browse/$cr"
 						assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
 						description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`	
+						components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
                     cd -
                 fi
-                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author|$email</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
+                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
             fi
         done
     else
@@ -114,8 +125,9 @@ do
 				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
 				assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
 				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
+			    components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
 				cr_url="https://idart.mot.com/browse/$cr"
-				echo "<tr><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author|$email</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
+				echo "<tr><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
             else
                 echo "can not find commit in gerrit server" # commit gerrit上查不到只能从本地获取了
                 if [ -d "$project_path" ]
@@ -128,9 +140,10 @@ do
 						cr_url="https://idart.mot.com/browse/$cr"
 						assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
 						description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
+						components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
                     cd -
                 fi
-                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author|$eamil</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$assign</td></tr>" >> change_list.html
+                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author</br>($eamil)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
             fi
         done
     fi
