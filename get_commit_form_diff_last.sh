@@ -1,6 +1,7 @@
 #!/bin/bash
 
 root=`pwd`
+
 release_diff="change_list.txt"
 gerrit_server="gerrit.mot.com"
 
@@ -23,6 +24,7 @@ html_header='
     <h1 class="text-center">CHANGE BETWEEN 2020-01-02 TO 2020-02-24</h1>
     <table class="table table-striped table-bordered">
         <tr>
+            <th>Repo Path</th>
             <th>URL</th>
             <th>SUBJECT</th>
             <th>AUTHOR</th>
@@ -54,7 +56,7 @@ do
 
     #echo $project_path  :  $project_name
     ############表头 共3 列,如果要增加列html_header 里面也要增加##########
-    echo "<tr><td colspan="6" style='text-align:left;font-weight:bold'>$project_path : $project_name </td></tr>" >> change_list.html
+    #echo "<tr><td colspan="6" style='text-align:left;font-weight:bold'>$project_path : $project_name </td></tr>" >> change_list.html
     #################################
 
     if [ $index == $((changed_from_array_len - 1)) ] #最后一行
@@ -67,35 +69,7 @@ do
             #echo $commit_id
             ssh -p 29418 $gerrit_server gerrit query commit:$commit_id --format JSON > temp.json
             temp_json_line=`wc -l temp.json| awk '{print $1}'`
-            if [ "$temp_json_line" -eq 2 ]
-            then
-                url=`sed -n "1p" temp.json | jq .url | awk -F '"' '{print $2}'`
-                subject=`sed -n "1p" temp.json | jq .subject | awk -F '"' '{print $2}'`
-                author=`sed -n "1p" temp.json | jq .owner.name | awk -F '"' '{print $2}'`
-				email=`sed -n "1p" temp.json | jq .owner.email | awk -F '"' '{print $2}'`
-				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
-                assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
-				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
-				components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
-				cr_url="https://idart.mot.com/browse/$cr"
-				echo "<tr><td><a href="$url">$url</a></td><td>$subject</td><td>$author</br>($eamil)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
-            else
-                echo "can not find commit in gerrit server" # commit gerrit上查不到只能从本地获取了
-                if [ -d "$project_path" ]
-                then
-                    cd "${project_array[index]}"
-                        subject=`git log $commit_id -n 1 --format="%s"`
-                        author=`git log $commit_id -n 1 --format="%an"`
-						email=`git log $commit_id -n 1 --format="%ae"`
-						cr=`git log $commit_id -n 1 --format="%s" | grep -aoe "IK[A-Z]*-[0-9]*"`
-						cr_url="https://idart.mot.com/browse/$cr"
-						assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
-						description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`	
-						components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
-                    cd -
-                fi
-                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
-            fi
+			select_cr_info
         done
     else
         #echo $index #放 change from 和 project 行号数组的 下标
@@ -108,39 +82,47 @@ do
             ssh -p 29418 $gerrit_server gerrit query commit:$commit_id --format JSON > temp.json
             #cat temp.json
             temp_json_line=`wc -l temp.json| awk '{print $1}'`
-            if [ "$temp_json_line" -eq 2 ]
-            then
-                url=`sed -n "1p" temp.json | jq .url | awk -F '"' '{print $2}'`
-                subject=`sed -n "1p" temp.json | jq .subject | awk -F '"' '{print $2}'`
-                author=`sed -n "1p" temp.json | jq .owner.name | awk -F '"' '{print $2}'`
-				email=`sed -n "1p" temp.json | jq .owner.email | awk -F '"' '{print $2}'`
-				cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
-				assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
-				description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
-			    components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
-				cr_url="https://idart.mot.com/browse/$cr"
-				echo "<tr><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
-            else
-                echo "can not find commit in gerrit server" # commit gerrit上查不到只能从本地获取了
-                if [ -d "$project_path" ]
-                then
-                    cd "${project_array[index]}"
-                        subject=`git log $commit_id -n 1 --format="%s"`
-                        author=`git log $commit_id -n 1 --format="%an"`
-						email=`git log $commit_id -n 1 --format="%ae"`
-						cr=`git log $commit_id -n 1 --format="%s" | grep -aoe "IK[A-Z]*-[0-9]*"`
-						cr_url="https://idart.mot.com/browse/$cr"
-						assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
-						description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
-						components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
-                    cd -
-                fi
-                echo "<tr><td>$commit_id</td><td>$subject</td><td>$author</br>($eamil)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
-            fi
+			select_cr_info
         done
     fi
 done
 echo $html_tail >> change_list.html
 }
 
+function select_cr_info(){
+if [ "$temp_json_line" -eq 2 ]
+then
+	repo_path=`sed -n "1p" temp.json | jq .project | awk -F '"' '{print $2}'`
+    url=`sed -n "1p" temp.json | jq .url | awk -F '"' '{print $2}'`
+    subject=`sed -n "1p" temp.json | jq .subject | awk -F '"' '{print $2}'`
+    author=`sed -n "1p" temp.json | jq .owner.name | awk -F '"' '{print $2}'`
+	email=`sed -n "1p" temp.json | jq .owner.email | awk -F '"' '{print $2}'`
+	cr=`sed -n "1p" temp.json | jq .subject | grep -aoe "IK[A-Z]*-[0-9]*"`
+    assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
+	description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`
+	components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
+	cr_url="https://idart.mot.com/browse/$cr"
+	echo "<tr><td>$repo_path</td><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
+else
+    echo "can not find commit in gerrit server" # commit gerrit上查不到只能从本地获取了
+    if [ -d "$project_path" ]
+    then
+		cd "${project_array[index]}"
+			repo_path=`sed -n "1p" temp.json | jq .project | awk -F '"' '{print $2}'`
+			url=`sed -n "1p" temp.json | jq .url | awk -F '"' '{print $2}'`
+            subject=`git log $commit_id -n 1 --format="%s"`
+            author=`git log $commit_id -n 1 --format="%an"`
+			email=`git log $commit_id -n 1 --format="%ae"`
+			cr=`git log $commit_id -n 1 --format="%s" | grep -aoe "IK[A-Z]*-[0-9]*"`
+			cr_url="https://idart.mot.com/browse/$cr"
+			assign=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.assignee.displayName`
+			description=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.summary`	
+			components=`curl -u gaoyx9:gyx050400?? -X GET http://idart.mot.com/rest/api/2/issue/$cr | jq .fields.components[0].name`
+        cd -
+	fi
+	echo "<tr><td>$repo_path</td><td><a href="$url">$commit_id</a></td><td>$subject</td><td>$author</br>($email)</td><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$components</td><td>$assign</td></tr>" >> change_list.html
+fi
+}
+
+echo "====================================="
 get_commit_msg
