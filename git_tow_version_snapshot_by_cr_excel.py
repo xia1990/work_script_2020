@@ -1,5 +1,6 @@
 #!/usr/bin/python
 #_*_ coding:utf-8 _*_
+#导出两个版本快照之间所有的CR并写入EXCEL中
 
 
 import xlwt
