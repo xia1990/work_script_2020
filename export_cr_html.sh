@@ -1,5 +1,4 @@
 #!/bin/bash
-#此脚本用来导出两个版本快照之间所有的CR
 
 root=`pwd`
 release_diff="change_list.txt"
@@ -96,9 +95,6 @@ do
                 fi
                 echo "<tr><td><a href="$cr_url">$cr</a></td><td>$description</td><td>$cr_conponent</td><td>$assign</td></tr>" >> change_list.html
             fi
-			echo "-------------------------------------------------"
-			echo $cr
-			echo "-------------------------------------------------"
         done
     else
         #echo $index #放 change from 和 project 行号数组的 下标

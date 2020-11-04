@@ -74,13 +74,14 @@ def in_process():
 		else:
 			commit_message=flist[change_number_index+1:change_from_number_array[change_index+1]-2+1]
 			if len(commit_message)==0:
+				print("no commit")
 				commit_list=[]
 			else:
 				for commit_line in commit_message:
 					commit_list.append(commit_line.split()[1])
 		print(commit_list)
 
-		for commit_index,commit in enumerate(commit_list):
+		for line_index,commit in enumerate(commit_list):
 			#cmd1="ssh -p 29418 %s gerrit query commit:%s --format JSON | egrep 'project|branch|subject'> temp.json" % (gerrit_server,commit)
 			cmd1="ssh -p 29418 %s gerrit query commit:%s --format JSON | egrep 'project|branch|subject' | awk 'NR==1'" % (gerrit_server,commit)
 			process=subprocess.Popen(cmd1,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -109,12 +110,12 @@ def in_process():
 						else:
 							cr_component=response["fields"]["components"][0]["name"]
 						cr_assign=response["fields"]["assignee"]["displayName"]
-						sheet1.write(commit_index+1,0,cr)
-						sheet1.write(commit_index+1,1,cr_description)
-						sheet1.write(commit_index+1,2,cr_component)
-						sheet1.write(commit_index+1,3,cr_assign)
-						sheet1.write(commit_index+1,4,project_name)
-						sheet1.write(commit_index+1,5,commit)
+						sheet1.write(line_index+1,0,cr)
+						sheet1.write(line_index+1,1,cr_description)
+						sheet1.write(line_index+1,2,cr_component)
+						sheet1.write(line_index+1,3,cr_assign)
+						sheet1.write(line_index+1,4,project_path)
+						sheet1.write(line_index+1,5,commit)
 			else:
 				message=json.loads(content)
 				repo_path=message["project"]
@@ -135,13 +136,13 @@ def in_process():
 					else:
 						cr_component=response["fields"]["components"][0]["name"]
 					cr_assign=response["fields"]["assignee"]["displayName"]
-					#print(commit_index+1,cr,cr_description,cr_component,cr_assign)
-					sheet1.write(commit_index+1,0,cr)
-					sheet1.write(commit_index+1,1,cr_description)
-					sheet1.write(commit_index+1,2,cr_component)
-					sheet1.write(commit_index+1,3,cr_assign)
-					sheet1.write(commit_index+1,4,repo_path)
-					sheet1.write(commit_index+1,5,commit)
+					#print(line_index+1,cr,cr_description,cr_component,cr_assign)
+					sheet1.write(line_index+1,0,cr)
+					sheet1.write(line_index+1,1,cr_description)
+					sheet1.write(line_index+1,2,cr_component)
+					sheet1.write(line_index+1,3,cr_assign)
+					sheet1.write(line_index+1,4,repo_path)
+					sheet1.write(line_index+1,5,commit)
 		f.save("change_list.xls")
 
 
