@@ -19,7 +19,6 @@ total_line=len(flist)
 gerrit_server="gerrit.mot.com"
 username="gaoyx9"
 password="gyx050400??"
-dict1={}
 root=os.getcwd()
 
 def set_style(name,height,bold=False):
@@ -143,7 +142,7 @@ def in_process():
 					sheet1.write(line_index+1,3,cr_assign)
 					sheet1.write(line_index+1,4,repo_path)
 					sheet1.write(line_index+1,5,commit)
-		f.save("change_list.xls")
+		f.save("cr_list.xls")
 
 
 #==============================================

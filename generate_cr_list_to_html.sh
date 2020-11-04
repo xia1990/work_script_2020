@@ -20,7 +20,6 @@ html_header='
 </head>
 <body>
     <base target="_blank" >
-    <h1 class="text-center">CHANGE BETWEEN 2020-01-02 TO 2020-02-24</h1>
     <table class="table table-striped table-bordered">
         <tr>
             <th>CR</th>
