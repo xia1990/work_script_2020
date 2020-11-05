@@ -3,6 +3,7 @@
 
 
 import xlwt
+import xlrd
 import subprocess
 import json
 import re
@@ -20,6 +21,7 @@ gerrit_server="gerrit.mot.com"
 username="gaoyx9"
 password="gyx050400??"
 root=os.getcwd()
+commit_list=[]
 
 def set_style(name,height,bold=False):
     style=xlwt.XFStyle()
@@ -41,8 +43,9 @@ def set_style(name,height,bold=False):
     font.size=500
     return style
 
-def in_process():
-	commit_list=[]
+def write_excel_head():
+	global f
+	global sheet1
 	f=xlwt.Workbook(encoding="utf-8")
 	sheet1=f.add_sheet("change_list",cell_overwrite_ok=True)
 	row0=[u'CR',u'DESCRIPTION',u'COMPONENTS',u'ASSIGN',u"REPO PATH",u"COMMIT"]
@@ -56,8 +59,11 @@ def in_process():
 			if "changed from" in line:
 				change_from_number_array.append(index)
 
+def get_commit():
     #change_from_number_array 中取出 change_from_number_array自己的下标, 和存放的 flist中 changed from 的下标
+	commit_index=0
 	for change_index,change_number_index in enumerate(change_from_number_array):
+		commit_list=[]
 		project_path=flist[change_number_index].split()[0]
 		ssh1="repo list -n %s" % (project_path)
 		process=subprocess.Popen(ssh1,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -78,10 +84,8 @@ def in_process():
 			else:
 				for commit_line in commit_message:
 					commit_list.append(commit_line.split()[1])
-		print(commit_list)
 
-		for line_index,commit in enumerate(commit_list):
-			#cmd1="ssh -p 29418 %s gerrit query commit:%s --format JSON | egrep 'project|branch|subject'> temp.json" % (gerrit_server,commit)
+		for commit in commit_list:
 			cmd1="ssh -p 29418 %s gerrit query commit:%s --format JSON | egrep 'project|branch|subject' | awk 'NR==1'" % (gerrit_server,commit)
 			process=subprocess.Popen(cmd1,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			process.wait()
@@ -109,12 +113,12 @@ def in_process():
 						else:
 							cr_component=response["fields"]["components"][0]["name"]
 						cr_assign=response["fields"]["assignee"]["displayName"]
-						sheet1.write(line_index+1,0,cr)
-						sheet1.write(line_index+1,1,cr_description)
-						sheet1.write(line_index+1,2,cr_component)
-						sheet1.write(line_index+1,3,cr_assign)
-						sheet1.write(line_index+1,4,project_path)
-						sheet1.write(line_index+1,5,commit)
+						sheet1.write(commit_index+1,0,cr)
+						sheet1.write(commit_index+1,1,cr_description)
+						sheet1.write(commit_index+1,2,cr_component)
+						sheet1.write(commit_index+1,3,cr_assign)
+						sheet1.write(commit_index+1,5,commit)
+						commit_index+=1
 			else:
 				message=json.loads(content)
 				repo_path=message["project"]
@@ -123,6 +127,7 @@ def in_process():
 				cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)
 				if len(cr)==0:
 					print("no cr")
+					line_index=0
 				else:
 					cr=cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)[0]
 					cr_url="https://idart.mot.com/browse/%s" % (cr)
@@ -136,15 +141,16 @@ def in_process():
 						cr_component=response["fields"]["components"][0]["name"]
 					cr_assign=response["fields"]["assignee"]["displayName"]
 					#print(line_index+1,cr,cr_description,cr_component,cr_assign)
-					sheet1.write(line_index+1,0,cr)
-					sheet1.write(line_index+1,1,cr_description)
-					sheet1.write(line_index+1,2,cr_component)
-					sheet1.write(line_index+1,3,cr_assign)
-					sheet1.write(line_index+1,4,repo_path)
-					sheet1.write(line_index+1,5,commit)
+					sheet1.write(commit_index+1,0,cr)
+					sheet1.write(commit_index+1,1,cr_description)
+					sheet1.write(commit_index+1,2,cr_component)
+					sheet1.write(commit_index+1,3,cr_assign)
+					sheet1.write(commit_index+1,4,repo_path)
+					sheet1.write(commit_index+1,5,commit)
+					commit_index+=1
 		f.save("cr_list.xls")
-
 
 #==============================================
 if __name__=="__main__":
-	in_process()
+	write_excel_head()
+	get_commit()
