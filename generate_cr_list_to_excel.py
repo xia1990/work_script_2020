@@ -29,7 +29,7 @@ def set_style(name,height,bold=False):
     pattern=xlwt.Pattern()
     pattern.pattern=xlwt.Pattern.SOLID_PATTERN
     #设置背景颜色
-    pattern.pattern_fore_colour=3
+    pattern.pattern_fore_colour=17
     style.pattern=pattern
     #设置边框(为实线)
     borders=xlwt.Borders()
