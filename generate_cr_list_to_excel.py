@@ -1,5 +1,6 @@
 #!/usr/bin/python
 #_*_ coding:utf-8 _*_
+#此脚本用来导出两个版本快照之间所有的CR
 
 
 import xlwt
@@ -50,6 +51,7 @@ def write_excel_head():
 	sheet1=f.add_sheet("change_list",cell_overwrite_ok=True)
 	row0=[u'CR',u'DESCRIPTION',u'COMPONENTS',u'ASSIGN',u"REPO PATH",u"COMMIT"]
 
+    #写入表格的头部
 	for row in range(0,len(row0)):
 		sheet1.write(0,row,row0[row],set_style('Times New Roman',400,True))
 
@@ -85,11 +87,13 @@ def get_commit():
 				for commit_line in commit_message:
 					commit_list.append(commit_line.split()[1])
 
+        #遍历每一个changed from行下的commit列表
 		for commit in commit_list:
 			cmd1="ssh -p 29418 %s gerrit query commit:%s --format JSON | egrep 'project|branch|subject' | awk 'NR==1'" % (gerrit_server,commit)
 			process=subprocess.Popen(cmd1,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			process.wait()
 			content=process.stdout.read()
+            #如果从gerrit上未查到此笔commit信息，代码此commit未进行code review,所以需要到本地仓库中查找
 			if content=="":
 				if os.path.isdir(project_path):
 					os.chdir(project_path)
@@ -98,20 +102,21 @@ def get_commit():
 					process.wait()
 					subject=process.stdout.read()
 					os.chdir(root)
+                    #正则表达式匹配CR号
 					cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)
 					if len(cr)==0:
 						print("no content:no cr")
 					else:
-						cr_component=response["fields"]["components"][0]["name"]
+                        cr=cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)[0]
 						cr_url="https://idart.mot.com/browse/%s" % (cr)
+                        #根据CR号查询每一个CR的详细信息
 						url="http://idart.mot.com/rest/api/2/issue/%s" % (cr)
 						response=requests.get(url,auth=(username,password)).json()
 						cr_description=response["fields"]["summary"]
 						cr_component=response["fields"]["components"]
 						if len(cr_component)==0:
 							print("no component")
-							sheet1.write(commit_index+1,2,"")
-							
+							sheet1.write(commit_index+1,2,"")	
 						else:
 							cr_component=response["fields"]["components"][0]["name"]
 						cr_assign=response["fields"]["assignee"]["displayName"]
@@ -120,17 +125,18 @@ def get_commit():
 						sheet1.write(commit_index+1,2,cr_component)
 						sheet1.write(commit_index+1,3,cr_assign)
 						sheet1.write(commit_index+1,5,commit)
+                        #每写一行，下标就加一
 						commit_index+=1
 			else:
 				message=json.loads(content)
 				repo_path=message["project"]
 				subject=message["subject"]
-
+                #正则表达式匹配CR号
 				cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)
 				if len(cr)==0:
 					print("no cr")
-					line_index=0
 				else:
+                    #正则表达式匹配CR号
 					cr=cr=re.findall(r'IK[A-Z]*-[0-9]*',subject)[0]
 					cr_url="https://idart.mot.com/browse/%s" % (cr)
 					url="http://idart.mot.com/rest/api/2/issue/%s" % (cr)
