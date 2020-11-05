@@ -110,6 +110,8 @@ def get_commit():
 						cr_component=response["fields"]["components"]
 						if len(cr_component)==0:
 							print("no component")
+							sheet1.write(commit_index+1,2,"")
+							
 						else:
 							cr_component=response["fields"]["components"][0]["name"]
 						cr_assign=response["fields"]["assignee"]["displayName"]
