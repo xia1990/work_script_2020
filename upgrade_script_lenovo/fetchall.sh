@@ -1,0 +1,5 @@
+(cd source; git fetch)
+(cd prebuilt; git fetch)
+(cd hap; git fetch)
+#(cd xtra_tz_src; git fetch)
+#(cd lte; git fetch)
