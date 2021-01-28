@@ -41,6 +41,7 @@ def getBuildResult(job_name,job_build_id):
 def build_son(result,level):
 	print(JOB_NAME,JOB_BUILD_ID+level,result["result"]) #打印当前build是否成功执行
 	Flag="false"
+	
 	param_dict={'BUILD_NUM_PROMOTION':JOB_BUILD_ID+level}
 	time.sleep(1)
 	level=level+1
