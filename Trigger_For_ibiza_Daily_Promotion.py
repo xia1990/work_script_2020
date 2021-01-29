@@ -41,7 +41,6 @@ def getBuildResult(job_name,job_build_id):
 def build_son(result,level):
 	print(JOB_NAME,JOB_BUILD_ID+level,result["result"]) #打印当前build是否成功执行
 	Flag="false"
-	
 	param_dict={'BUILD_NUM_PROMOTION':JOB_BUILD_ID+level}
 	time.sleep(1)
 	level=level+1
@@ -50,6 +49,8 @@ def build_son(result,level):
 		server.build_job(SON_JOB,parameters=param_dict)
 		Flag="true"
 		if Flag=="true":
+			print("-"*100)
+			server.disable_job(JOB_NAME)
 			sys.exit(0)
         #可以启动你需要启动的JOB
 	elif result["result"] == "FAILURE": 
