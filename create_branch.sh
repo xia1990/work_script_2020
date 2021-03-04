@@ -1,61 +1,141 @@
-#!/bin/bash
-#create for sofiap+
+#!/bin/bash  
 
-PROJECT=$1
-BRANCH=$2
-XML="r-6125.xml"
-SSH_URL="ssh://gerrit.mot.com:29418/home/repo/dev/platform/android/platform/manifest/q"
+#PROJECT=$1
+#BRANCH=$2
+#TAG=$3
+#UPDATE_ID=$4
+MANIFEST="R"
+POINT="False"
+PRODUCT="IBIZA"
+ROOTPATH=`pwd`
 
-function usage(){
-	echo "arge1:PROJECT"
-	echo "arge2:BRANCH"
-	echo "./create_branch.sh PROJECT BRANCH"
-}
+if [[ -z $PROJECT ]] || [[ -z $BRANCH ]]
+then
+	echo "请输入要拉取的分支名称和PROJECT名称"
+    exit 1
+fi
 
-function git_clone(){
-	if [ ! -d "q" ];then
-		git clone $SSH_URL -b $BRANCH
-	else
-		rm -rf q
-		git clone $SSH_URL -b $BRANCH
-	fi
-}
+case $MANIFEST in
+Q)
+    MANIFEST="manifest/q"
+    XML="r-6125.xml"
+    ;;  
+R)
+    MANIFEST="manifest/r"
+    if [ $PRODUCT=="IBIZA" ];then
+    	XML="r-qsm2021.xml"
+    elif [ $PRODUCT=="CAPRI" ];then
+    	XML="r-qsm2020.xml"
+    elif [ $PRODUCT=="CAPRIP" ];then
+    	XML="r-qsm2020.xml"
+    else
+    	echo "$XML"
+    fi
+    ;;  
+esac
 
-function main(){
-	cd q
-		REVISION=`cat $XML | grep "$PROJECT" | grep -aoe "revision=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
-		UPSTREAM=`cat $XML | grep "$PROJECT" | grep -aoe "upstream=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
-		echo "$rev:upstream"
-
-		if [ $PROJECT != "" and $BRANCH != "" and $REVISION != "" ];then
-			echo "begin create branch"
-			ssh -p 29418 gerrit.mot.com gerrit create-branch $PROJECT $BRANCH/$UPSTREAM $REVISION
-		else
-			echo "args error"
-			exit
+function Create_ManifestBranch(){
+	cd $ROOTPATH
+		if [ -d manifest ];then
+			rm -rf manifest
+			git clone ssh://gerrit.mot.com/home/repo/dev/platform/android/platform/${MANIFEST} manifest
+		else 
+			git clone ssh://gerrit.mot.com/home/repo/dev/platform/android/platform/${MANIFEST} manifest
 		fi
 
-		len_rev=${#rev}
-		if [ $rev == $len_rev ];then
-			echo "$BRANCH/$upstream"
-			sed -i "s/revision=\"$revision\"/revision=\"$BRANCH\/$upstream\"/" $XML
-			sed -i "s/upstream=\"$upstream\"/upstream=\"$BRANCH\/$upstream\"/" $XML
-			echo "$BRANCH/$upstream"
-			echo "==========================="
-			git status
-			cat r-6125.xml
-			git add r-6125.xml
+		cd ./manifest
+			git checkout $TAG
+			git checkout -b $BRANCH
+			git push origin $BRANCH:$BRANCH
+
+			cp sha1_embedded_manifest.xml  $XML
+			git add $XML
+			git commit -m "pull point branch on $BRANCH"
+			git push origin HEAD:refs/heads/$BRANCH
+		cd -
+	cd -
+}
+
+function Create_IdBranch(){
+	cd $ROOTPATH/manifest
+		if [ $UPDATE_ID == "True" ];then
+			REVISION1=`cat $XML | grep "motorola/build_ids" | grep -aoe "revision=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
+			UPSTREAM1=`cat $XML | grep "motorola/build_ids" | grep -aoe "upstream=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
+			#删掉最后一个/  及其左边的字符串
+			UP=${UPSTREAM1##*/}
+			P="home\/repo\/dev\/platform\/android\/motorola\/build_ids"
+
+			if [ "$POINT" == "False" ];then
+				ssh -p 29418 gerrit.mot.com gerrit create-branch home/repo/dev/platform/android/motorola/build_ids $BRANCH $REVISION1
+				if [ $?==0 ];then
+					echo "CREATE BUILD ID BRANCH SUCESSFULLY"
+				fi
+				echo "begin update xml"
+				echo $REVISION1
+				echo $UPSTREAM2
+				sed -i "s#revision=\"$REVISION1\"#revision=\"$BRANCH\"#" $XML
+				sed -i "/$P\"/s#upstream=\"$UPSTREAM1\"##"  $XML
+				git diff $XML
+			else
+				ssh -p 29418 gerrit.mot.com gerrit create-branch home/repo/dev/platform/android/motorola/build_ids $BRANCH/$UP $REVISION1
+				if [ $? == 0 ];then
+					echo "CREATE BUILD ID BRANCH SUCESSFULLY"
+				fi
+				sed -i "s#revision=\"$REVISION1\"#revision=\"$BRANCH\/$UP\"#" $XML
+				sed -i "/$P\"/s#upstream=\"$UPSTREAM1\"##" $XML
+				git diff $XML 
+			fi
+
+		else 
+			echo "不修改版本号，"
 		fi
+	cd -
+}
+
+function Pull_Branch_Main(){
+	cd $ROOTPATH/manifest
+		for i in $PROJECT
+		do
+			REVISION2=`cat $XML | grep -w $i\" | grep -aoe "revision=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
+			UPSTREAM2=`cat $XML | grep -w $i\" | grep -aoe "upstream=[a-zA-Z0-9\.\"\"\/\-]*" | awk -F'"' '{print $2}'`
+			
+			#删掉最后一个/  及其左边的字符串
+			UP=${UPSTREAM2##*/}
+			P=${i//\//\\/}
+       
+			if [ "$POINT" == "False" ];then
+            	echo "---------------------------------------------------------------"
+                echo "开始创建分支"
+                echo "---------------------------------------------------------------"
+                
+				ssh -p 29418 gerrit.mot.com gerrit create-branch $i $BRANCH $REVISION2
+				if [ $?==0 ];then
+					echo "分支创建成功！"
+				fi
+				echo "begin update xml"
+				sed -i "s#revision=\"$REVISION2\"#revision=\"$BRANCH\"#" $XML
+				#sed -i "/$P\"/s#upstream=\"$UPSTREAM\"#upstream=\"$BRANCH\"#"  $XML
+				sed -i "/$P\"/s#upstream=\"$UPSTREAM2\"##"  $XML
+				#git diff $XML
+			else
+           		echo "---------------------------------------------------------------"
+                echo "开始创建分支"
+                echo "---------------------------------------------------------------"
+				ssh -p 29418 gerrit.mot.com gerrit create-branch $i $BRANCH/$UP $REVISION2
+				if [ $? == 0 ];then
+					echo "分支创建成功！"
+				fi
+				sed -i "s#revision=\"$REVISION2\"#revision=\"$BRANCH\/$UP\"#" $XML
+				sed -i "/$P\"/s#upstream=\"$UPSTREAM2\"##" $XML
+				#git diff $XML
+			fi
+      
+		done
 	cd -
 }
 
 
 ################################################
-if [ $# == 2 ];then
-	git_clone
-	#main
-else
-	echo "please input PROJECT and BRANCH"
-	usage
-	exit
-fi
+Create_ManifestBranch
+Create_IdBranch
+Pull_Branch_Main
